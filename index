@@ -1,0 +1,58 @@
+import { useState } from "react";
+import axios from "axios";
+
+export default function TranscriptPage() {
+  const [file, setFile] = useState(null);
+  const [transcript, setTranscript] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleFileChange = (event) => {
+    setFile(event.target.files[0]);
+  };
+
+  const handleUpload = async () => {
+    if (!file) return;
+    setLoading(true);
+    const formData = new FormData();
+    formData.append("audio", file);
+
+    try {
+      const response = await axios.post("/api/transcribe", formData);
+      setTranscript(response.data.transcript);
+    } catch (error) {
+      console.error("Error:", error);
+      alert("辨識過程發生錯誤！");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([transcript], { type: "text/plain;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "transcript.txt";
+    link.click();
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto p-5">
+      <h1 className="text-xl font-bold">語音轉逐字稿工具</h1>
+
+      <input type="file" accept=".mp3,.wav" onChange={handleFileChange} className="mt-4" />
+      <button onClick={handleUpload} disabled={loading || !file} className="mt-4 p-2 bg-blue-500 text-white rounded">
+        {loading ? "辨識中..." : "上傳並轉換"}
+      </button>
+
+      {transcript && (
+        <div className="mt-4">
+          <h2 className="text-lg font-semibold">逐字稿結果：</h2>
+          <textarea readOnly value={transcript} className="w-full h-64 border p-2 rounded mt-2" />
+          <button onClick={handleDownload} className="mt-2 p-2 bg-green-500 text-white rounded">
+            下載逐字稿
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
