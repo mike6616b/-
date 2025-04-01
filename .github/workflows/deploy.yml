@@ -22,7 +22,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: .  # ← 如果你有特定資料夾（像是 public），請改成 public
+          path: .  # ← 如果 index.html 在根目錄，保持這樣
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v2
