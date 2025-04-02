@@ -38,7 +38,7 @@ class TrailPoint {
         this.x = x;
         this.y = y;
         this.age = age; // 用於控制透明度和大小
-        this.maxAge = 70; // 進一步增加尾巴點的最大生命周期
+        this.maxAge = 50; // 進一步增加尾巴點的最大生命周期
     }
 
     // 更新尾巴點的生命週期
@@ -52,7 +52,7 @@ class TrailPoint {
         const ageRatio = this.age / this.maxAge;
         const opacity = 1 - ageRatio;
         // 隨著年齡增加，半徑慢慢減小
-        const radius = pointer.radius * (1 - ageRatio * 0.7);
+        const radius = pointer.radius * (1 - ageRatio * 0.8);
         
         ctx.beginPath();
         ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
@@ -64,7 +64,7 @@ class TrailPoint {
         );
         
         trailGradient.addColorStop(0, `rgba(212, 175, 55, ${opacity})`);
-        trailGradient.addColorStop(1, `rgba(212, 175, 55, ${opacity * 0.3})`); // 邊緣50%的透明度
+        trailGradient.addColorStop(1, `rgba(212, 175, 55, ${opacity * 0.5})`); // 邊緣50%的透明度
         
         ctx.fillStyle = trailGradient;
         ctx.fill();
@@ -80,12 +80,12 @@ class Particle {
         this.speedX = Math.random() * 6 - 3;
         this.speedY = Math.random() * 6 - 3;
         this.color = elegantColors[Math.floor(Math.random() * elegantColors.length)];
-        this.life = 70 + Math.random() * 50; // 進一步增加粒子壽命
+        this.life = 50 + Math.random() * 50; // 進一步增加粒子壽命
         this.maxLife = this.life;
         this.initialX = x;
         this.initialY = y;
         this.trail = []; // 儲存粒子的尾巴路徑
-        this.trailLength = 20 + Math.floor(Math.random() * 15); // 增加尾巴長度
+        this.trailLength = 10 + Math.floor(Math.random() * 15); // 增加尾巴長度
     }
 
     // 更新粒子位置和生命週期
@@ -103,8 +103,8 @@ class Particle {
         this.life--;
         
         // 粒子逐漸減速，但減速更慢，讓路徑更長
-        this.speedX *= 0.9;
-        this.speedY *= 0.9;
+        this.speedX *= 0.98;
+        this.speedY *= 0.98;
         
         return this.life > 0;
     }
@@ -118,7 +118,7 @@ class Particle {
             for (let i = 0; i < this.trail.length - 1; i++) {
                 // 計算每個尾巴點的透明度，尾端為30%透明度
                 const pointIndex = i / this.trail.length;
-                const tailOpacity = headOpacity * (0.2 + (0.7 * pointIndex));
+                const tailOpacity = headOpacity * (0.3 + (0.7 * pointIndex));
                 
                 const lineWidth = this.size * (0.5 + (pointIndex * 0.5));
                 
