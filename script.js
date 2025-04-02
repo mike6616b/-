@@ -38,7 +38,7 @@ class TrailPoint {
         this.x = x;
         this.y = y;
         this.age = age; // 用於控制透明度和大小
-        this.maxAge = 40; // 增加尾巴點的最大生命周期
+        this.maxAge = 50; // 進一步增加尾巴點的最大生命周期
     }
 
     // 更新尾巴點的生命週期
@@ -49,13 +49,24 @@ class TrailPoint {
 
     // 繪製尾巴點
     draw() {
-        const opacity = 1 - (this.age / this.maxAge);
-        const radius = pointer.radius * (1 - (this.age / this.maxAge) * 0.8);
+        const ageRatio = this.age / this.maxAge;
+        const opacity = 1 - ageRatio;
+        // 隨著年齡增加，半徑慢慢減小
+        const radius = pointer.radius * (1 - ageRatio * 0.8);
         
         ctx.beginPath();
         ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
-        // 使用典雅的金色
-        ctx.fillStyle = `rgba(212, 175, 55, ${opacity})`;
+        
+        // 創建從中心向外漸變透明的效果
+        const trailGradient = ctx.createRadialGradient(
+            this.x, this.y, 0,
+            this.x, this.y, radius
+        );
+        
+        trailGradient.addColorStop(0, `rgba(212, 175, 55, ${opacity})`);
+        trailGradient.addColorStop(1, `rgba(212, 175, 55, ${opacity * 0.5})`); // 邊緣50%的透明度
+        
+        ctx.fillStyle = trailGradient;
         ctx.fill();
     }
 }
@@ -69,12 +80,12 @@ class Particle {
         this.speedX = Math.random() * 6 - 3;
         this.speedY = Math.random() * 6 - 3;
         this.color = elegantColors[Math.floor(Math.random() * elegantColors.length)];
-        this.life = 40 + Math.random() * 40; // 增加粒子壽命，讓它們停留更久
+        this.life = 50 + Math.random() * 50; // 進一步增加粒子壽命
         this.maxLife = this.life;
         this.initialX = x;
         this.initialY = y;
         this.trail = []; // 儲存粒子的尾巴路徑
-        this.trailLength = 5 + Math.floor(Math.random() * 10); // 粒子尾巴長度
+        this.trailLength = 10 + Math.floor(Math.random() * 15); // 增加尾巴長度
     }
 
     // 更新粒子位置和生命週期
@@ -92,26 +103,29 @@ class Particle {
         this.life--;
         
         // 粒子逐漸減速，但減速更慢，讓路徑更長
-        this.speedX *= 0.97;
-        this.speedY *= 0.97;
+        this.speedX *= 0.98;
+        this.speedY *= 0.98;
         
         return this.life > 0;
     }
 
     // 繪製粒子及其尾巴
     draw() {
-        const opacity = this.life / this.maxLife;
+        const headOpacity = this.life / this.maxLife;
         
         // 繪製尾巴
         if (this.trail.length > 1) {
             for (let i = 0; i < this.trail.length - 1; i++) {
-                const pointOpacity = opacity * (i / this.trail.length);
-                const lineWidth = this.size * opacity * (i / this.trail.length) * 0.8;
+                // 計算每個尾巴點的透明度，尾端為30%透明度
+                const pointIndex = i / this.trail.length;
+                const tailOpacity = headOpacity * (0.3 + (0.7 * pointIndex));
+                
+                const lineWidth = this.size * (0.5 + (pointIndex * 0.5));
                 
                 ctx.beginPath();
                 ctx.moveTo(this.trail[i].x, this.trail[i].y);
                 ctx.lineTo(this.trail[i+1].x, this.trail[i+1].y);
-                ctx.strokeStyle = this.color + Math.floor(pointOpacity * 255).toString(16).padStart(2, '0');
+                ctx.strokeStyle = this.color + Math.floor(tailOpacity * 255).toString(16).padStart(2, '0');
                 ctx.lineWidth = lineWidth;
                 ctx.stroke();
             }
@@ -119,8 +133,18 @@ class Particle {
         
         // 繪製粒子本身
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size * opacity, 0, Math.PI * 2);
-        ctx.fillStyle = this.color + Math.floor(opacity * 255).toString(16).padStart(2, '0');
+        ctx.arc(this.x, this.y, this.size * headOpacity, 0, Math.PI * 2);
+        
+        // 創建粒子頭部的漸變
+        const particleGradient = ctx.createRadialGradient(
+            this.x, this.y, 0,
+            this.x, this.y, this.size * headOpacity
+        );
+        
+        particleGradient.addColorStop(0, this.color);
+        particleGradient.addColorStop(1, this.color + Math.floor(headOpacity * 0.5 * 255).toString(16).padStart(2, '0'));
+        
+        ctx.fillStyle = particleGradient;
         ctx.fill();
     }
 }
@@ -163,8 +187,8 @@ function createParticles(x, y, count) {
 
 // 動畫循環
 function animate() {
-    // 漸隱效果，減慢消失速度讓粒子停留更久
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
+    // 漸隱效果，進一步減慢消失速度讓粒子停留更久
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // 更新指針位置（緩和移動）
@@ -198,13 +222,14 @@ function animate() {
     ctx.beginPath();
     ctx.arc(pointer.x, pointer.y, pointer.radius, 0, Math.PI * 2);
     
-    // 創建一個金色漸變填充
+    // 創建一個金色漸變填充，從中心向外越來越透明
     const gradient = ctx.createRadialGradient(
         pointer.x, pointer.y, 0,
         pointer.x, pointer.y, pointer.radius
     );
     gradient.addColorStop(0, elegantColors[1]); // 明亮的金色中心
-    gradient.addColorStop(1, elegantColors[0]); // 真金色邊緣
+    gradient.addColorStop(0.7, elegantColors[0]); // 真金色中間區域
+    gradient.addColorStop(1, elegantColors[0] + '80'); // 50%透明的金色邊緣
     
     ctx.fillStyle = gradient;
     ctx.fill();
