@@ -1,4 +1,4 @@
-name: Pages Deploy (cleaned)
+name: GitHub Pages Deploy (cleaned)
 
 on:
   push:
@@ -19,10 +19,10 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload static files
+      - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: .  # 如果你的 index.html 就在根目錄，這樣就對了
+          path: .
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v2
