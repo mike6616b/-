@@ -76,16 +76,18 @@ class Particle {
     constructor(x, y) {
         this.x = x;
         this.y = y;
-        this.size = Math.random() * 3 + 1;
-        this.speedX = Math.random() * 6 - 3;
-        this.speedY = Math.random() * 6 - 3;
+        this.size = Math.random() * 3 + 2; // 略微增大粒子尺寸
+        this.speedX = 0; // 初始速度，在createFirework中設定
+        this.speedY = 0; // 初始速度，在createFirework中設定
         this.color = elegantColors[Math.floor(Math.random() * elegantColors.length)];
-        this.life = 50 + Math.random() * 50; // 進一步增加粒子壽命
+        this.life = 70 + Math.random() * 80; // 大幅增加粒子壽命
         this.maxLife = this.life;
         this.initialX = x;
         this.initialY = y;
         this.trail = []; // 儲存粒子的尾巴路徑
-        this.trailLength = 10 + Math.floor(Math.random() * 15); // 增加尾巴長度
+        this.trailLength = 20 + Math.floor(Math.random() * 30); // 大幅增加尾巴長度
+        this.gravity = 0.03; // 添加重力效果
+        this.decay = 0.99; // 慢一點的減速率，產生更長的路徑
     }
 
     // 更新粒子位置和生命週期
@@ -98,13 +100,19 @@ class Particle {
             this.trail.shift();
         }
         
+        // 更新位置
         this.x += this.speedX;
         this.y += this.speedY;
-        this.life--;
         
-        // 粒子逐漸減速，但減速更慢，讓路徑更長
-        this.speedX *= 0.98;
-        this.speedY *= 0.98;
+        // 添加重力效果，讓煙火有拋物線運動
+        this.speedY += this.gravity;
+        
+        // 粒子逐漸減速
+        this.speedX *= this.decay;
+        this.speedY *= this.decay;
+        
+        // 減少生命值
+        this.life--;
         
         return this.life > 0;
     }
@@ -120,7 +128,8 @@ class Particle {
                 const pointIndex = i / this.trail.length;
                 const tailOpacity = headOpacity * (0.3 + (0.7 * pointIndex));
                 
-                const lineWidth = this.size * (0.5 + (pointIndex * 0.5));
+                // 尾巴線寬從細到粗
+                const lineWidth = this.size * (0.3 + (pointIndex * 0.7));
                 
                 ctx.beginPath();
                 ctx.moveTo(this.trail[i].x, this.trail[i].y);
@@ -146,11 +155,23 @@ class Particle {
         
         ctx.fillStyle = particleGradient;
         ctx.fill();
+        
+        // 添加發光效果
+        if (headOpacity > 0.7) {
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = this.color;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
     }
 }
 
 // 尾巴點數組
 const trail = [];
+
+// 定義生成粒子的計時器和最小間隔
+let lastParticleTime = 0;
+const particleInterval = 100; // 每100毫秒才能產生新的煙火爆炸
 
 // 監聽滑鼠移動事件
 canvas.addEventListener('mousemove', (e) => {
@@ -166,10 +187,13 @@ canvas.addEventListener('mousemove', (e) => {
     isMoving = true;
     clearTimeout(moveTimeout);
     
-    // 如果滑鼠移動距離大於閾值，生成粒子
+    // 如果滑鼠移動距離大於閾值，且超過了最小間隔時間，生成煙火爆炸
     const distance = Math.hypot(mouseX - prevMouseX, mouseY - prevMouseY);
-    if (distance > 5) {
-        createParticles(mouseX, mouseY, 3 + Math.floor(distance / 10));
+    const currentTime = Date.now();
+    
+    if (distance > 8 && currentTime - lastParticleTime > particleInterval) {
+        createFirework(mouseX, mouseY);
+        lastParticleTime = currentTime;
     }
     
     // 設置一個短暫的延遲後將移動狀態設為否
@@ -178,17 +202,37 @@ canvas.addEventListener('mousemove', (e) => {
     }, 100);
 });
 
-// 生成粒子函數
-function createParticles(x, y, count) {
-    for (let i = 0; i < count; i++) {
-        particles.push(new Particle(x, y));
+// 生成煙火爆炸效果
+function createFirework(x, y) {
+    // 粒子數量較少，但每個粒子效果更強
+    const particleCount = 12 + Math.floor(Math.random() * 8);
+    
+    // 生成一組向四面八方發射的粒子，模擬爆炸效果
+    for (let i = 0; i < particleCount; i++) {
+        // 計算角度，使粒子向各個方向發射
+        const angle = (i / particleCount) * Math.PI * 2;
+        
+        // 計算隨機速度，使煙火有不同的爆炸半徑
+        const speed = 4 + Math.random() * 6;
+        
+        // 根據角度和速度計算初始速度向量
+        const speedX = Math.cos(angle) * speed;
+        const speedY = Math.sin(angle) * speed;
+        
+        // 創建具有指定方向和速度的粒子
+        const particle = new Particle(x, y);
+        particle.speedX = speedX;
+        particle.speedY = speedY;
+        
+        // 添加到粒子數組
+        particles.push(particle);
     }
 }
 
 // 動畫循環
 function animate() {
     // 漸隱效果，進一步減慢消失速度讓粒子停留更久
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.015)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // 更新指針位置（緩和移動）
@@ -241,6 +285,41 @@ function animate() {
     ctx.shadowBlur = 0;
     
     requestAnimationFrame(animate);
+}
+
+// 監聽滑鼠點擊事件，產生爆炸效果
+canvas.addEventListener('click', (e) => {
+    // 產生更大型的煙火爆炸
+    createBigFirework(e.clientX, e.clientY);
+});
+
+// 產生大型煙火爆炸
+function createBigFirework(x, y) {
+    // 大型爆炸包含更多的粒子
+    const particleCount = 24 + Math.floor(Math.random() * 12);
+    
+    // 生成一組向四面八方發射的粒子，模擬爆炸效果
+    for (let i = 0; i < particleCount; i++) {
+        // 計算角度，使粒子向各個方向發射
+        const angle = (i / particleCount) * Math.PI * 2;
+        
+        // 使用更大的初始速度
+        const speed = 6 + Math.random() * 8;
+        
+        // 根據角度和速度計算初始速度向量
+        const speedX = Math.cos(angle) * speed;
+        const speedY = Math.sin(angle) * speed;
+        
+        // 創建具有指定方向和速度的粒子
+        const particle = new Particle(x, y);
+        particle.speedX = speedX;
+        particle.speedY = speedY;
+        particle.size = Math.random() * 4 + 2; // 稍大一些的粒子
+        particle.trailLength = 30 + Math.floor(Math.random() * 40); // 更長的尾巴
+        
+        // 添加到粒子數組
+        particles.push(particle);
+    }
 }
 
 // 監聽視窗大小變化事件，重新設定畫布大小
