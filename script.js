@@ -15,21 +15,21 @@ let prevMouseY = mouseY;
 let isMoving = false;
 let moveTimeout;
 
-// 定義賽博龐克風格的顏色
-const cyberpunkColors = [
-    '#00f0ff', // 青藍色
-    '#ff00a0', // 亮粉色
-    '#7b00ff', // 紫色
-    '#00ff8f', // 霓虹綠
-    '#ff3c00'  // 橙色
+// 定義典雅金色系列的顏色
+const elegantColors = [
+    '#d4af37', // 真金色
+    '#ffd700', // 金色
+    '#f0e68c', // 卡其色
+    '#daa520', // 金菊色
+    '#b8860b'  // 暗金色
 ];
 
 // 滑鼠追蹤點的屬性
 const pointer = {
     x: mouseX,
     y: mouseY,
-    radius: 15, // 略大於滑鼠游標
-    color: cyberpunkColors[0]
+    radius: 8, // 更小的跟隨點
+    color: elegantColors[0]
 };
 
 // 尾巴點的類別
@@ -38,7 +38,7 @@ class TrailPoint {
         this.x = x;
         this.y = y;
         this.age = age; // 用於控制透明度和大小
-        this.maxAge = 30; // 尾巴點的最大生命周期
+        this.maxAge = 40; // 增加尾巴點的最大生命周期
     }
 
     // 更新尾巴點的生命週期
@@ -54,7 +54,8 @@ class TrailPoint {
         
         ctx.beginPath();
         ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0, 240, 255, ${opacity})`;
+        // 使用典雅的金色
+        ctx.fillStyle = `rgba(212, 175, 55, ${opacity})`;
         ctx.fill();
     }
 }
@@ -67,27 +68,56 @@ class Particle {
         this.size = Math.random() * 3 + 1;
         this.speedX = Math.random() * 6 - 3;
         this.speedY = Math.random() * 6 - 3;
-        this.color = cyberpunkColors[Math.floor(Math.random() * cyberpunkColors.length)];
-        this.life = 20 + Math.random() * 20;
+        this.color = elegantColors[Math.floor(Math.random() * elegantColors.length)];
+        this.life = 40 + Math.random() * 40; // 增加粒子壽命，讓它們停留更久
         this.maxLife = this.life;
+        this.initialX = x;
+        this.initialY = y;
+        this.trail = []; // 儲存粒子的尾巴路徑
+        this.trailLength = 5 + Math.floor(Math.random() * 10); // 粒子尾巴長度
     }
 
     // 更新粒子位置和生命週期
     update() {
+        // 儲存當前位置到尾巴
+        this.trail.push({x: this.x, y: this.y});
+        
+        // 限制尾巴長度
+        if (this.trail.length > this.trailLength) {
+            this.trail.shift();
+        }
+        
         this.x += this.speedX;
         this.y += this.speedY;
         this.life--;
         
-        // 粒子逐漸減速
-        this.speedX *= 0.95;
-        this.speedY *= 0.95;
+        // 粒子逐漸減速，但減速更慢，讓路徑更長
+        this.speedX *= 0.97;
+        this.speedY *= 0.97;
         
         return this.life > 0;
     }
 
-    // 繪製粒子
+    // 繪製粒子及其尾巴
     draw() {
         const opacity = this.life / this.maxLife;
+        
+        // 繪製尾巴
+        if (this.trail.length > 1) {
+            for (let i = 0; i < this.trail.length - 1; i++) {
+                const pointOpacity = opacity * (i / this.trail.length);
+                const lineWidth = this.size * opacity * (i / this.trail.length) * 0.8;
+                
+                ctx.beginPath();
+                ctx.moveTo(this.trail[i].x, this.trail[i].y);
+                ctx.lineTo(this.trail[i+1].x, this.trail[i+1].y);
+                ctx.strokeStyle = this.color + Math.floor(pointOpacity * 255).toString(16).padStart(2, '0');
+                ctx.lineWidth = lineWidth;
+                ctx.stroke();
+            }
+        }
+        
+        // 繪製粒子本身
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size * opacity, 0, Math.PI * 2);
         ctx.fillStyle = this.color + Math.floor(opacity * 255).toString(16).padStart(2, '0');
@@ -133,8 +163,8 @@ function createParticles(x, y, count) {
 
 // 動畫循環
 function animate() {
-    // 漸隱效果，而不是完全清除
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    // 漸隱效果，減慢消失速度讓粒子停留更久
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.03)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // 更新指針位置（緩和移動）
@@ -168,20 +198,20 @@ function animate() {
     ctx.beginPath();
     ctx.arc(pointer.x, pointer.y, pointer.radius, 0, Math.PI * 2);
     
-    // 創建一個漸變填充
+    // 創建一個金色漸變填充
     const gradient = ctx.createRadialGradient(
         pointer.x, pointer.y, 0,
         pointer.x, pointer.y, pointer.radius
     );
-    gradient.addColorStop(0, cyberpunkColors[0]);
-    gradient.addColorStop(1, cyberpunkColors[1]);
+    gradient.addColorStop(0, elegantColors[1]); // 明亮的金色中心
+    gradient.addColorStop(1, elegantColors[0]); // 真金色邊緣
     
     ctx.fillStyle = gradient;
     ctx.fill();
     
     // 添加發光效果
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = cyberpunkColors[0];
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = elegantColors[0];
     ctx.stroke();
     ctx.shadowBlur = 0;
     
