@@ -22,7 +22,7 @@ jobs:
       - name: Upload static files
         uses: actions/upload-pages-artifact@v2
         with:
-          path: .  # 如果你的 index.html 就在根目錄，這樣就對了
+          path: .  # 如果你的 index.html 就在根目錄，這樣就對了！
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v2
